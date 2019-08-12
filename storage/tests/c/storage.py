@@ -1,6 +1,7 @@
 import ctypes as c
 import os
 
+EXTERNAL_SALT_LEN = 32
 sectrue = -1431655766  # 0xAAAAAAAAA
 fname = os.path.join(os.path.dirname(__file__), "libtrezor-storage.so")
 
@@ -21,6 +22,8 @@ class Storage:
         self.lib.storage_wipe()
 
     def unlock(self, pin: int, ext_salt: bytes = None) -> bool:
+        if ext_salt is not None and len(ext_salt) != EXTERNAL_SALT_LEN:
+            raise ValueError
         return sectrue == self.lib.storage_unlock(c.c_uint32(pin), ext_salt)
 
     def lock(self) -> None:
@@ -39,6 +42,10 @@ class Storage:
         old_ext_salt: bytes = None,
         new_ext_salt: bytes = None,
     ) -> bool:
+        if old_ext_salt is not None and len(old_ext_salt) != EXTERNAL_SALT_LEN:
+            raise ValueError
+        if new_ext_salt is not None and len(new_ext_salt) != EXTERNAL_SALT_LEN:
+            raise ValueError
         return sectrue == self.lib.storage_change_pin(
             c.c_uint32(oldpin), c.c_uint32(newpin), old_ext_salt, new_ext_salt
         )
