@@ -13,7 +13,7 @@ from apps.common.sd_salt import request_sd_salt
 from apps.common.storage import device
 
 if False:
-    from typing import Any
+    from typing import Any, Optional
     from trezor.messages.ChangePin import ChangePin
 
 
@@ -21,9 +21,9 @@ async def change_pin(ctx: wire.Context, msg: ChangePin) -> Success:
     # confirm that user wants to change the pin
     await require_confirm_change_pin(ctx, msg)
 
-    salt_hash = device.get_sd_salt_hash()
-    if salt_hash is not None:
-        salt = await request_sd_salt(salt_hash)
+    salt_auth_key = device.get_sd_salt_auth_key()
+    if salt_auth_key is not None:
+        salt = await request_sd_salt(salt_auth_key)  # type: Optional[bytearray]
     else:
         salt = None
 

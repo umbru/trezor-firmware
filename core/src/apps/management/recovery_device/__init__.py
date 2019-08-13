@@ -11,6 +11,7 @@ from apps.management.change_pin import request_pin_ack, request_pin_confirm
 from apps.management.recovery_device.homescreen import recovery_process
 
 if False:
+    from typing import Optional
     from trezor.messages.RecoveryDevice import RecoveryDevice
 
 
@@ -35,9 +36,9 @@ async def recovery_device(ctx: wire.Context, msg: RecoveryDevice) -> Success:
 
     # for dry run pin needs to be entered
     if msg.dry_run:
-        salt_hash = storage.device.get_sd_salt_hash()
-        if salt_hash is not None:
-            salt = await request_sd_salt(salt_hash)
+        salt_auth_key = storage.device.get_sd_salt_auth_key()
+        if salt_auth_key is not None:
+            salt = await request_sd_salt(salt_auth_key)  # type: Optional[bytearray]
         else:
             salt = None
 

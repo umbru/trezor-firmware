@@ -6,18 +6,21 @@ from apps.common.request_pin import request_pin
 from apps.common.sd_salt import request_sd_salt
 from apps.common.storage import device
 
+if False:
+    from typing import Optional
+
 
 async def bootscreen() -> None:
     ui.display.orientation(storage.device.get_rotation())
-    salt_hash = device.get_sd_salt_hash()
+    salt_auth_key = device.get_sd_salt_auth_key()
 
     while True:
         try:
-            if salt_hash is not None or config.has_pin():
+            if salt_auth_key is not None or config.has_pin():
                 await lockscreen()
 
-            if salt_hash is not None:
-                salt = await request_sd_salt(salt_hash)
+            if salt_auth_key is not None:
+                salt = await request_sd_salt(salt_auth_key)  # type: Optional[bytearray]
             else:
                 salt = None
 
