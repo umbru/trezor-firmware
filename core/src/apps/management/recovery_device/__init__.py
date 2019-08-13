@@ -6,6 +6,7 @@ from trezor.ui.text import Text
 
 from apps.common import storage
 from apps.common.confirm import require_confirm
+from apps.common.sd_salt import request_sd_salt
 from apps.management.change_pin import request_pin_ack, request_pin_confirm
 from apps.management.recovery_device.homescreen import recovery_process
 
@@ -32,13 +33,19 @@ async def recovery_device(ctx: wire.Context, msg: RecoveryDevice) -> Success:
         text.normal("Do you really want to", "check the recovery", "seed?")
     await require_confirm(ctx, text, code=ButtonRequestType.ProtectCall)
 
-    # for dry run pin needs to entered
+    # for dry run pin needs to be entered
     if msg.dry_run:
+        salt_hash = storage.device.get_sd_salt_hash()
+        if salt_hash is not None:
+            salt = await request_sd_salt(salt_hash)
+        else:
+            salt = None
+
         if config.has_pin():
             curpin = await request_pin_ack(ctx, "Enter PIN", config.get_pin_rem())
         else:
             curpin = ""
-        if not config.check_pin(pin_to_int(curpin)):
+        if not config.check_pin(pin_to_int(curpin), salt):
             raise wire.PinInvalid("PIN invalid")
 
     # set up pin if requested

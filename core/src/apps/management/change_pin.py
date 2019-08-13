@@ -9,6 +9,8 @@ from trezor.ui.text import Text
 
 from apps.common.confirm import require_confirm
 from apps.common.request_pin import PinCancelled, request_pin
+from apps.common.sd_salt import request_sd_salt
+from apps.common.storage import device
 
 if False:
     from typing import Any
@@ -16,16 +18,21 @@ if False:
 
 
 async def change_pin(ctx: wire.Context, msg: ChangePin) -> Success:
-
     # confirm that user wants to change the pin
     await require_confirm_change_pin(ctx, msg)
+
+    salt_hash = device.get_sd_salt_hash()
+    if salt_hash is not None:
+        salt = await request_sd_salt(salt_hash)
+    else:
+        salt = None
 
     # get current pin, return failure if invalid
     if config.has_pin():
         curpin = await request_pin_ack(ctx, "Enter old PIN", config.get_pin_rem())
         # if removing, defer check to change_pin()
         if not msg.remove:
-            if not config.check_pin(pin_to_int(curpin)):
+            if not config.check_pin(pin_to_int(curpin), salt):
                 raise wire.PinInvalid("PIN invalid")
     else:
         curpin = ""
@@ -37,7 +44,7 @@ async def change_pin(ctx: wire.Context, msg: ChangePin) -> Success:
         newpin = ""
 
     # write into storage
-    if not config.change_pin(pin_to_int(curpin), pin_to_int(newpin)):
+    if not config.change_pin(pin_to_int(curpin), pin_to_int(newpin), salt, salt):
         raise wire.PinInvalid("PIN invalid")
 
     if newpin:

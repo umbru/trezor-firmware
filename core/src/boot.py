@@ -3,21 +3,33 @@ from trezor.pin import pin_to_int, show_pin_timeout
 
 from apps.common import storage
 from apps.common.request_pin import request_pin
+from apps.common.sd_salt import request_sd_salt
+from apps.common.storage import device
 
 
 async def bootscreen() -> None:
     ui.display.orientation(storage.device.get_rotation())
+    salt_hash = device.get_sd_salt_hash()
+
     while True:
         try:
+            if salt_hash is not None or config.has_pin():
+                await lockscreen()
+
+            if salt_hash is not None:
+                salt = await request_sd_salt(salt_hash)
+            else:
+                salt = None
+
             if not config.has_pin():
-                config.unlock(pin_to_int(""))
+                config.unlock(pin_to_int(""), salt)
                 storage.init_unlocked()
                 return
-            await lockscreen()
+
             label = "Enter your PIN"
             while True:
                 pin = await request_pin(label, config.get_pin_rem())
-                if config.unlock(pin_to_int(pin)):
+                if config.unlock(pin_to_int(pin), salt):
                     storage.init_unlocked()
                     return
                 else:

@@ -31,6 +31,7 @@ _MNEMONIC_TYPE             = const(0x0E)  # int
 _ROTATION                  = const(0x0F)  # int
 _SLIP39_IDENTIFIER         = const(0x10)  # bool
 _SLIP39_ITERATION_EXPONENT = const(0x11)  # int
+_SD_SALT_HASH              = const(0x12)  # bytes
 # fmt: on
 
 HOMESCREEN_MAXSIZE = 16384
@@ -234,3 +235,20 @@ def get_slip39_iteration_exponent() -> Optional[int]:
     The device's actual SLIP-39 iteration exponent used in passphrase derivation.
     """
     return common._get_uint8(_NAMESPACE, _SLIP39_ITERATION_EXPONENT)
+
+
+def get_sd_salt_hash() -> Optional[bytes]:
+    """
+    The hash used to check authenticity of the SD card salt.
+    """
+    return common._get(_NAMESPACE, _SD_SALT_HASH, public=True)
+
+
+def set_sd_salt_hash(salt_hash: Optional[bytes]) -> None:
+    """
+    The hash used to check the authenticity of the SD card salt.
+    """
+    if salt_hash is not None:
+        return common._set(_NAMESPACE, _SD_SALT_HASH, salt_hash, public=True)
+    else:
+        return common._delete(_NAMESPACE, _SD_SALT_HASH, public=True)
