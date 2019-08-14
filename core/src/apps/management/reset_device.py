@@ -147,7 +147,7 @@ async def backup_group_slip39_wallet(ctx: wire.Context, secret: bytes) -> None:
 
     # generate the mnemonics
     mnemonics = slip39.generate_mnemonics_from_data(
-        master_secret=secret,
+        encrypted_master_secret=secret,
         identifier=storage.device.get_slip39_identifier(),
         group_threshold=group_threshold,
         groups=groups,
