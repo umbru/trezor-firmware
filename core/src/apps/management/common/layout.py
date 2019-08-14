@@ -66,7 +66,7 @@ async def confirm_backup_again(ctx):
     )
 
 
-async def _confirm_share_words(ctx, share_index, share_words):
+async def _confirm_share_words(ctx, share_index, share_words, group_index=None):
     numbered = list(enumerate(share_words))
 
     # check three words
@@ -77,13 +77,17 @@ async def _confirm_share_words(ctx, share_index, share_words):
         third += 1
 
     for part in utils.chunks(numbered, third):
-        if not await _confirm_word(ctx, share_index, part, len(share_words)):
+        if not await _confirm_word(
+            ctx, share_index, part, len(share_words), group_index
+        ):
             return False
 
     return True
 
 
-async def _confirm_word(ctx, share_index, numbered_share_words, count):
+async def _confirm_word(
+    ctx, share_index, numbered_share_words, count, group_index=None
+):
     # TODO: duplicated words in the choice list
 
     # shuffle the numbered seed half, slice off the choices we need
@@ -100,7 +104,7 @@ async def _confirm_word(ctx, share_index, numbered_share_words, count):
 
     # let the user pick a word
     choices = [word for _, word in numbered_choices]
-    select = MnemonicWordSelect(choices, share_index, checked_index, count)
+    select = MnemonicWordSelect(choices, share_index, checked_index, count, group_index)
     if __debug__:
         selected_word = await ctx.wait(select, debug.input_signal)
     else:
@@ -223,6 +227,8 @@ def _get_mnemonic_page(words: list):
 # TODO: smaller font or tighter rows to fit more text in
 # TODO: icons in checklist
 
+# SLIP 39 simple
+
 
 async def slip39_show_checklist_set_shares(ctx):
     checklist = Checklist("Backup checklist", ui.ICON_RESET)
@@ -257,13 +263,51 @@ async def slip39_show_checklist_show_shares(ctx, num_of_shares, threshold):
     )
 
 
-async def slip39_prompt_number_of_shares(ctx):
+# SLIP 39 group
+
+
+async def slip39_group_show_checklist_set_groups(ctx):
+    checklist = Checklist("Super Shamir checklist", ui.ICON_RESET)
+    checklist.add("Set number of groups")
+    checklist.add("Set group threshold")
+    checklist.add(("Set number of shares", "and shares threshold"))
+    checklist.select(0)
+    return await confirm(
+        ctx, checklist, ButtonRequestType.ResetDevice, cancel=None, confirm="Continue"
+    )
+
+
+async def slip39_group_show_checklist_set_group_threshold(ctx, num_of_shares):
+    checklist = Checklist("Super Shamir checklist", ui.ICON_RESET)
+    checklist.add("Set number of groups")
+    checklist.add("Set group threshold")
+    checklist.add(("Set number of shares", "and shares threshold"))
+    checklist.select(1)
+    return await confirm(
+        ctx, checklist, ButtonRequestType.ResetDevice, cancel=None, confirm="Continue"
+    )
+
+
+async def slip39_group_show_checklist_set_shares(ctx, num_of_shares, group_threshold):
+    checklist = Checklist("Super Shamir checklist", ui.ICON_RESET)
+    checklist.add("Set number of groups")
+    checklist.add("Set group threshold")
+    checklist.add(("Set number of shares", "and shares threshold"))
+    checklist.select(2)
+    return await confirm(
+        ctx, checklist, ButtonRequestType.ResetDevice, cancel=None, confirm="Continue"
+    )
+
+
+async def slip39_prompt_number_of_shares(ctx, group_id=-1):
     count = 5
     min_count = 2
     max_count = 16
 
     while True:
-        shares = ShamirNumInput(ShamirNumInput.SET_SHARES, count, min_count, max_count)
+        shares = ShamirNumInput(
+            ShamirNumInput.SET_SHARES, count, min_count, max_count, group_id
+        )
         confirmed = await confirm(
             ctx,
             shares,
@@ -290,14 +334,82 @@ async def slip39_prompt_number_of_shares(ctx):
     return count
 
 
-async def slip39_prompt_threshold(ctx, num_of_shares):
+async def slip39_prompt_number_of_groups(ctx):
+    count = 5
+    min_count = 2
+    max_count = 16
+
+    while True:
+        shares = ShamirNumInput(ShamirNumInput.SET_GROUPS, count, min_count, max_count)
+        confirmed = await confirm(
+            ctx,
+            shares,
+            ButtonRequestType.ResetDevice,
+            cancel="Info",
+            confirm="Continue",
+            major_confirm=True,
+            cancel_style=ButtonDefault,
+        )
+        count = shares.input.count
+        if confirmed:
+            break
+        else:
+            info = InfoConfirm(
+                "Group contains set "
+                "number of shares and "
+                "its own threshold. "
+                "In the next step you set "
+                "both number of shares "
+                "and threshold."
+            )
+            await info
+
+    return count
+
+
+async def slip39_prompt_group_threshold(ctx, num_of_groups):
+    count = num_of_groups // 2 + 1
+    min_count = 2
+    max_count = num_of_groups
+
+    while True:
+        shares = ShamirNumInput(
+            ShamirNumInput.SET_GROUP_THRESHOLD, count, min_count, max_count
+        )
+        confirmed = await confirm(
+            ctx,
+            shares,
+            ButtonRequestType.ResetDevice,
+            cancel="Info",
+            confirm="Continue",
+            major_confirm=True,
+            cancel_style=ButtonDefault,
+        )
+        count = shares.input.count
+        if confirmed:
+            break
+        else:
+            info = InfoConfirm(
+                "Group threshold sets"
+                "number of groups "
+                "needed to recover wallet. "
+                "i.e. Set the number to 3 "
+                "and you'll need any 3 "
+                "groups of total number."
+            )
+            await info
+
+    return count
+
+
+async def slip39_prompt_threshold(ctx, num_of_shares, group_id=-1):
     count = num_of_shares // 2 + 1
     min_count = 2
     max_count = num_of_shares
 
     while True:
         shares = ShamirNumInput(
-            ShamirNumInput.SET_THRESHOLD, count, min_count, max_count
+            ShamirNumInput.SET_THRESHOLD, count, min_count, max_count, group_id
         )
         confirmed = await confirm(
             ctx,
@@ -345,13 +457,40 @@ async def slip39_show_and_confirm_shares(ctx, shares):
                 await _show_confirmation_failure(ctx, index)
 
 
-async def _slip39_show_share_words(ctx, share_index, share_words):
+async def slip39_group_show_and_confirm_shares(ctx, shares):
+    # warn user about mnemonic safety
+    await show_backup_warning(ctx, slip39=True)
+
+    for group_index, group in enumerate(shares):
+        for share_index, share in enumerate(group):
+            share_words = share.split(" ")
+            while True:
+                # display paginated share on the screen
+                await _slip39_show_share_words(
+                    ctx, share_index, share_words, group_index
+                )
+
+                # make the user confirm words from the share
+                if await _confirm_share_words(
+                    ctx, share_index, share_words, group_index
+                ):
+                    await _show_confirmation_success(
+                        ctx, share_index, num_of_shares=len(shares), slip39=True
+                    )
+                    break  # this share is confirmed, go to next one
+                else:
+                    await _show_confirmation_failure(ctx, share_index)
+
+
+async def _slip39_show_share_words(ctx, share_index, share_words, group_index=None):
     first, chunks, last = _slip39_split_share_into_pages(share_words)
 
     if share_index is None:
         header_title = "Recovery seed"
-    else:
+    elif group_index is None:
         header_title = "Recovery share #%s" % (share_index + 1)
+    else:
+        header_title = "GROUP #%s / SHARE #%s" % ((group_index + 1), (share_index + 1))
     header_icon = ui.ICON_RESET
     pages = []  # ui page components
     shares_words_check = []  # check we display correct data
@@ -427,12 +566,15 @@ def _slip39_split_share_into_pages(share_words):
 class ShamirNumInput(ui.Control):
     SET_SHARES = object()
     SET_THRESHOLD = object()
+    SET_GROUPS = object()
+    SET_GROUP_THRESHOLD = object()
 
-    def __init__(self, step, count, min_count, max_count):
+    def __init__(self, step, count, min_count, max_count, group_id=None):
         self.step = step
         self.input = NumInput(count, min_count=min_count, max_count=max_count)
         self.input.on_change = self.on_change
         self.repaint = True
+        self.group_id = group_id
 
     def dispatch(self, event, x, y):
         self.input.dispatch(event, x, y)
@@ -448,6 +590,12 @@ class ShamirNumInput(ui.Control):
                 header = "Set num. of shares"
             elif self.step is ShamirNumInput.SET_THRESHOLD:
                 header = "Set threshold"
+            elif self.step is ShamirNumInput.SET_GROUPS:
+                header = "Set num. of groups"
+            elif self.step is ShamirNumInput.SET_GROUP_THRESHOLD:
+                header = "Set group threshold"
+            if self.group_id is not None:
+                header = header + " for group %s" % self.group_id + 1
             ui.header(header, ui.ICON_RESET, ui.TITLE_GREY, ui.BG, ui.ORANGE_ICON)
 
             # render the counter
@@ -487,7 +635,7 @@ class ShamirNumInput(ui.Control):
 class MnemonicWordSelect(ui.Layout):
     NUM_OF_CHOICES = 3
 
-    def __init__(self, words, share_index, word_index, count):
+    def __init__(self, words, share_index, word_index, count, group_index=None):
         self.words = words
         self.share_index = share_index
         self.word_index = word_index
@@ -499,8 +647,12 @@ class MnemonicWordSelect(ui.Layout):
             self.buttons.append(btn)
         if share_index is None:
             self.text = Text("Check seed")
-        else:
+        elif group_index is None:
             self.text = Text("Check share #%s" % (share_index + 1))
+        else:
+            self.text = Text(
+                "Check share #%s group #%s" % ((share_index + 1), (group_index + 1))
+            )
         self.text.normal("Select word %d of %d:" % (word_index + 1, count))
 
     def dispatch(self, event, x, y):
