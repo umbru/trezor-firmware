@@ -190,13 +190,15 @@ def try_tags(gen, tags_from, tag_to):
 
 core_tags, legacy_tags = get_tags()
 
+core_tags = ["v2.1.1"]
+
 print("Found versions for CORE: ", core_tags)
 print("Found versions for LEGACY: ", legacy_tags)
 print()
 
 # TODO: this is a bit stupid - we convert the filenames to tags, to be later
 # converted to filenames again in emulator wrapper
-try_tags("core", core_tags, CORE_BUILD)
+# try_tags("core", core_tags, CORE_BUILD)
 try_tags("legacy", legacy_tags, LEGACY_BUILD)
 
 print("ALL OK")

@@ -31,7 +31,7 @@ before_script:
   - pipenv sync
 
 include:
-  - ci/environment.yml
-  - ci/prebuild.yml
+  # - ci/environment.yml
+  # - ci/prebuild.yml
   - ci/build.yml
   - ci/test.yml
