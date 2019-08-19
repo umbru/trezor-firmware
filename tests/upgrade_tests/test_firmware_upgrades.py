@@ -192,6 +192,7 @@ core_tags, legacy_tags = get_tags()
 
 core_tags = ["v2.1.1"]
 
+
 print("Found versions for CORE: ", core_tags)
 print("Found versions for LEGACY: ", legacy_tags)
 print()
