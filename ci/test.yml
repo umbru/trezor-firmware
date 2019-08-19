@@ -73,3 +73,17 @@ test storage:
     - cd storage/tests
     - pipenv run make build
     - pipenv run make tests_all
+
+
+# Other
+
+test upgrade:
+  stage: test
+  before_script:
+    - pipenv sync
+  dependencies:
+    - build core unix frozen debug
+    - build legacy emu
+  script:
+    - tests/upgrade_tests/download_emulators.sh
+    - pipenv run python tests/upgrade_tests/test_firmware_upgrades.py
