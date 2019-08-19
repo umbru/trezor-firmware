@@ -199,7 +199,7 @@ print()
 
 # TODO: this is a bit stupid - we convert the filenames to tags, to be later
 # converted to filenames again in emulator wrapper
-# try_tags("core", core_tags, CORE_BUILD)
-try_tags("legacy", legacy_tags, LEGACY_BUILD)
+try_tags("core", core_tags, CORE_BUILD)
+# try_tags("legacy", legacy_tags, LEGACY_BUILD)
 
 print("ALL OK")
