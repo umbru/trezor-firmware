@@ -19,16 +19,16 @@ def get(index: int) -> Optional[str]:
         return m.decode()
     return None
 
-def get_index_for_group(index: int, group_index: int) -> Optional[str]:
+def get_index_from_group(index: int, group_index: int) -> Optional[str]:
     m = common._get(common._APP_RECOVERY_SHARES, index + (group_index-1) * 16)
     if m:
         return m.decode()
     return None
 
 
-def fetch() -> List[str]:
+def fetch(group_count: int = 1) -> List[str]:
     mnemonics = []
-    for index in range(0, slip39.MAX_SHARE_COUNT):
+    for index in range(0, slip39.MAX_SHARE_COUNT * group_count):
         m = get(index)
         if m:
             mnemonics.append(m)

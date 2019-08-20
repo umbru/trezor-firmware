@@ -4,6 +4,7 @@ from trezor.messages import ButtonRequestType
 from trezor.messages.ButtonAck import ButtonAck
 from trezor.messages.ButtonRequest import ButtonRequest
 from trezor.ui.info import InfoConfirm
+from trezor.ui.scroll import Paginated
 from trezor.ui.text import Text
 from trezor.ui.word_select import WordSelector
 
@@ -52,7 +53,7 @@ async def request_word_count(ctx: wire.Context, dry_run: bool) -> int:
 
 
 async def request_mnemonic(
-    ctx: wire.Context, count: int, mnemonic_type: int, mnemonics: List[str]
+    ctx: wire.Context, count: int, mnemonic_type: int, mnemonics: List[str], advanced_shamir: bool = False
 ) -> str:
     await ctx.call(ButtonRequest(code=ButtonRequestType.MnemonicInput), ButtonAck)
 
@@ -68,23 +69,65 @@ async def request_mnemonic(
             word = await ctx.wait(keyboard)
 
         if mnemonic_type == mnemonic.TYPE_SLIP39 and mnemonics:
-            # check if first 3 words of mnemonic match
-            # we can check against the first one, others were checked already
-            if i < 3:
-                share_list = mnemonics[0].split(" ")
-                if share_list[i] != word:
-                    raise IdentifierMismatchError()
-            elif i == 3:
-                for share in mnemonics:
-                    share_list = share.split(" ")
-                    # check if the fourth word is different from previous shares
-                    if share_list[i] == word:
-                        raise ShareAlreadyAddedError()
+            if not advanced_shamir:
+                # check if first 3 words of mnemonic match
+                # we can check against the first one, others were checked already
+                if i < 3:
+                    share_list = mnemonics[0].split(" ")
+                    if share_list[i] != word:
+                        raise IdentifierMismatchError()
+                elif i == 3:
+                    for share in mnemonics:
+                        share_list = share.split(" ")
+                        # check if the fourth word is different from previous shares
+                        if share_list[i] == word:
+                            raise ShareAlreadyAddedError()
+            else:
+                # in case of advanced shamir recovery we only check 2 words
+                if i < 2:
+                    share_list = mnemonics[0].split(" ")
+                    if share_list[i] != word:
+                        raise IdentifierMismatchError()
 
         words.append(word)
 
     return " ".join(words)
 
+async def show_remaining_shares(ctx: wire.Context, groups: List[str], group_threshold: int) -> None:
+    pages = []
+    for group in groups:
+        text = Text(
+            "Remaining Shares"
+        )
+        text.bold("1 More share starting")
+        words = group.split(" ")
+        for word in words:
+            text.normal(word)
+        pages.append(text)
+
+    if group_threshold > len(groups):
+        text = Text(
+            "Remaining Shares"
+        )
+        text.bold("%s More groups starting" % (group_threshold - len(groups)))
+        words = groups[0].split(" ")[0:2]
+        for word in words:
+            text.normal(word)
+        pages.append(text)
+
+    return await confirm(ctx, Paginated(pages))
+
+async def show_share_success(ctx: wire.Context) -> None:
+    text = Text(
+        "Success",
+        ui.ICON_CHECK
+    )
+    text.bold("You have entered")
+    text.bold("Share 2")
+    text.normal("from")
+    text.bold("Group 1")
+
+    return await confirm(ctx, text)
 
 async def show_dry_run_result(
     ctx: wire.Context, result: bool, mnemonic_type: int

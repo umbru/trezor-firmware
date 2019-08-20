@@ -10,6 +10,8 @@ if False:
 class RecoveryAborted(Exception):
     pass
 
+_GROUP_STORAGE_OFFSET = 16
+
 
 def process_share(words: str, mnemonic_type: int) -> Optional[bytes]:
     if mnemonic_type == mnemonic.TYPE_BIP39:
@@ -33,13 +35,15 @@ def _process_slip39(words: str) -> Optional[bytes]:
     Receives single mnemonic and processes it. Returns what is then stored in storage or
     None if more shares are needed.
     """
-    identifier, iteration_exponent, _, _, _, index, threshold, value = slip39.decode_mnemonic(
+    identifier, iteration_exponent, group_index, group_threshold, group_count, index, threshold, value = slip39.decode_mnemonic(
         words
     )  # TODO: use better data structure for this
+
     if threshold == 1:
         raise ValueError("Threshold equal to 1 is not allowed.")
 
     remaining = storage.recovery.get_remaining()
+    groups_remaining = storage.recovery.get_slip39_groups_remaining()
 
     # if this is the first share, parse and store metadata
     if not remaining:
@@ -48,6 +52,10 @@ def _process_slip39(words: str) -> Optional[bytes]:
         storage.recovery.set_slip39_threshold(threshold)
         storage.recovery.set_remaining(threshold - 1)
         storage.recovery_shares.set(index, words)
+        if group_count > 1:
+            storage.recovery.set_slip39_group_count(group_count)
+            storage.recovery.set_slip39_group_threshold(group_threshold)
+            storage.recovery.set_slip39_groups_remaining(group_threshold)
         return None  # we need more shares
 
     # These should be checked by UI before so it's a Runtime exception otherwise
@@ -59,8 +67,8 @@ def _process_slip39(words: str) -> Optional[bytes]:
     # add mnemonic to storage
     remaining -= 1
     storage.recovery.set_remaining(remaining)
-    storage.recovery_shares.set(index, words)
-    if remaining != 0:
+    storage.recovery_shares.set(index + group_index * _GROUP_STORAGE_OFFSET, words)
+    if remaining != 0 or groups_remaining:
         return None  # we need more shares
 
     # combine shares and return the master secret

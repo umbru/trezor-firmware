@@ -14,6 +14,9 @@ _REMAINING                 = const(0x05)  # int
 _SLIP39_IDENTIFIER         = const(0x03)  # bytes
 _SLIP39_THRESHOLD          = const(0x04)  # int
 _SLIP39_ITERATION_EXPONENT = const(0x06)  # int
+_SLIP39_GROUP_COUNT        = const(0x07)  # int
+_SLIP39_GROUP_THRESHOLD    = const(0x08)  # int
+_SLIP39_GROUPS_REMAINING   = const(0x09)  # int
 # fmt: on
 
 if False:
@@ -76,6 +79,30 @@ def get_slip39_iteration_exponent() -> Optional[int]:
     return common._get_uint8(_NAMESPACE, _SLIP39_ITERATION_EXPONENT)
 
 
+def set_slip39_group_count(group_count: int) -> None:
+    common._set_uint8(_NAMESPACE, _SLIP39_GROUP_COUNT, group_count)
+
+
+def get_slip39_group_count() -> Optional[int]:
+    return common._get_uint8(_NAMESPACE, _SLIP39_GROUP_COUNT)
+
+
+def set_slip39_group_threshold(group_threshold: int) -> None:
+    common._set_uint8(_NAMESPACE, _SLIP39_GROUP_THRESHOLD, group_threshold)
+
+
+def get_slip39_group_threshold() -> Optional[int]:
+    return common._get_uint8(_NAMESPACE, _SLIP39_GROUP_THRESHOLD)
+
+
+def set_slip39_groups_remaining(groups_remaining: int) -> None:
+    common._set_uint8(_NAMESPACE, _SLIP39_GROUPS_REMAINING, groups_remaining)
+
+
+def get_slip39_groups_remaining() -> Optional[int]:
+    return common._get_uint8(_NAMESPACE, _SLIP39_GROUPS_REMAINING)
+
+
 def end_progress() -> None:
     common._delete(_NAMESPACE, _IN_PROGRESS)
     common._delete(_NAMESPACE, _DRY_RUN)
@@ -84,4 +111,7 @@ def end_progress() -> None:
     common._delete(_NAMESPACE, _SLIP39_THRESHOLD)
     common._delete(_NAMESPACE, _REMAINING)
     common._delete(_NAMESPACE, _SLIP39_ITERATION_EXPONENT)
+    common._delete(_NAMESPACE, _SLIP39_GROUP_COUNT)
+    common._delete(_NAMESPACE, _SLIP39_GROUP_THRESHOLD)
+    common._delete(_NAMESPACE, _SLIP39_GROUPS_REMAINING)
     recovery_shares.delete()

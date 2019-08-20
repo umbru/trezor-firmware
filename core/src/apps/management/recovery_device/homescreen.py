@@ -128,10 +128,27 @@ async def _request_secret(
     secret = None
     while secret is None:
         # ask for mnemonic words one by one
-        mnemonics = storage.recovery_shares.fetch()
+        group_count = storage.recovery.get_slip39_group_count()
+        if group_count:
+            group_threshold = storage.recovery.get_slip39_group_threshold()
+            groups_remaining = storage.recovery.get_slip39_groups_remaining()
+            advanced_shamir = group_count > 1
+            mnemonics = storage.recovery_shares.fetch(group_count)
+        else:
+            mnemonics = storage.recovery_shares.fetch()
+            advanced_shamir = False
+
+        if advanced_shamir:
+            identifiers = []
+            for mnemonic in mnemonics:
+                identifier = " ".join(mnemonic.split(" ")[0:3])
+                identifiers.append(identifier)
+                identifiers = list(set(identifiers))
+            await layout.show_remaining_shares(ctx, identifiers, group_threshold)
+
         try:
             words = await layout.request_mnemonic(
-                ctx, word_count, mnemonic_type, mnemonics
+                ctx, word_count, mnemonic_type, mnemonics, advanced_shamir
             )
         except IdentifierMismatchError:
             await layout.show_identifier_mismatch(ctx)
@@ -175,14 +192,19 @@ async def _request_share_first_screen(
 async def _request_share_next_screen(ctx: wire.Context, mnemonic_type: int) -> None:
     if mnemonic_type == mnemonic.TYPE_SLIP39:
         remaining = storage.recovery.get_remaining()
+        groups_remaining = storage.recovery.get_slip39_groups_remaining()
         if not remaining:
             # 'remaining' should be stored at this point
             raise RuntimeError
-        if remaining == 1:
-            text = "1 more share"
+        if groups_remaining:
+            content = layout.RecoveryHomescreen("More shares needed", "for this recovery")
+            await layout.homescreen_dialog(ctx, content, "Enter share")
         else:
-            text = "%d more shares" % remaining
-        content = layout.RecoveryHomescreen(text, "needed to enter")
-        await layout.homescreen_dialog(ctx, content, "Enter share")
+            if remaining == 1:
+                text = "1 more share"
+            else:
+                text = "%d more shares" % remaining
+            content = layout.RecoveryHomescreen(text, "needed to enter")
+            await layout.homescreen_dialog(ctx, content, "Enter share")
     else:
         raise RuntimeError
