@@ -24,8 +24,24 @@ build core firmware:
     - core/build/bootloader/bootloader.bin
     expire_in: 1 week
 
+build core firmware bitcoinonly:
+  stage: build
+  variables:
+    BITCOIN_ONLY: "1"
+  script:
+    - cd core
+    - pipenv run make build_firmware
+
 build core unix:
   stage: build
+  script:
+    - cd core
+    - pipenv run make build_unix
+
+build core unix bitcoinonly:
+  stage: build
+  variables:
+    BITCOIN_ONLY: "1"
   script:
     - cd core
     - pipenv run make build_unix
@@ -94,5 +110,12 @@ build legacy emu:
     untracked: true
     expire_in: 1 day
 
-
-
+build legacy emu bitcoinonly:
+  stage: build
+  variables:
+    BITCOIN_ONLY: "1"
+    DEBUG_LINK: "1"
+    EMULATOR: "1"
+  script:
+    - cd legacy
+    - pipenv run script/cibuild

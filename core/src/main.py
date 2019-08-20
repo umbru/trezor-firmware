@@ -32,40 +32,45 @@ def _boot_default() -> None:
     import apps.homescreen
     import apps.management
     import apps.wallet
-    import apps.ethereum
-    import apps.lisk
-    import apps.monero
-    import apps.nem
-    import apps.stellar
-    import apps.ripple
-    import apps.cardano
-    import apps.tezos
-    import apps.eos
-    import apps.binance
+
+    if False:
+        import apps.ethereum
+        import apps.lisk
+        import apps.monero
+        import apps.nem
+        import apps.stellar
+        import apps.ripple
+        import apps.cardano
+        import apps.tezos
+        import apps.eos
+        import apps.binance
 
     if __debug__:
         import apps.debug
     else:
-        import apps.webauthn
+        if False:
+            import apps.webauthn
 
     # boot applications
     apps.homescreen.boot()
     apps.management.boot()
     apps.wallet.boot()
-    apps.ethereum.boot()
-    apps.lisk.boot()
-    apps.monero.boot()
-    apps.nem.boot()
-    apps.stellar.boot()
-    apps.ripple.boot()
-    apps.cardano.boot()
-    apps.tezos.boot()
-    apps.eos.boot()
-    apps.binance.boot()
+    if False:
+        apps.ethereum.boot()
+        apps.lisk.boot()
+        apps.monero.boot()
+        apps.nem.boot()
+        apps.stellar.boot()
+        apps.ripple.boot()
+        apps.cardano.boot()
+        apps.tezos.boot()
+        apps.eos.boot()
+        apps.binance.boot()
     if __debug__:
         apps.debug.boot()
     else:
-        apps.webauthn.boot(usb.iface_webauthn)
+        if False:
+            apps.webauthn.boot(usb.iface_webauthn)
 
     # run main event loop and specify which screen is the default
     from apps.homescreen.homescreen import homescreen
