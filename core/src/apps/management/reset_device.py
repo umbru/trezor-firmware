@@ -141,8 +141,8 @@ async def backup_group_slip39_wallet(ctx: wire.Context, secret: bytes) -> None:
     )
     groups = []
     for i in range(groups_count):
-        share_count = await layout.slip39_prompt_number_of_shares(ctx)
-        share_threshold = await layout.slip39_prompt_threshold(ctx, share_count)
+        share_count = await layout.slip39_prompt_number_of_shares(ctx, i)
+        share_threshold = await layout.slip39_prompt_threshold(ctx, share_count, i)
         groups.append((share_threshold, share_count))
 
     # generate the mnemonics
@@ -203,11 +203,9 @@ async def _show_reset_device_warning(
         text.br()
         text.bold("with Shamir Backup?")
     elif backup_type == ResetDeviceBackupType.Slip39_Multiple_Groups:
-        text.bold("Do you want to create")
+        text.bold("Create a new wallet")
         text.br()
-        text.bold("a new wallet backed up")
-        text.br()
-        text.bold("by Super Shamir?")
+        text.bold("with Super Shamir?")
     else:
         text.bold("Do you want to create")
         text.br()

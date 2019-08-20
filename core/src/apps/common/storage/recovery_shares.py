@@ -19,6 +19,12 @@ def get(index: int) -> Optional[str]:
         return m.decode()
     return None
 
+def get_index_for_group(index: int, group_index: int) -> Optional[str]:
+    m = common._get(common._APP_RECOVERY_SHARES, index + (group_index-1) * 16)
+    if m:
+        return m.decode()
+    return None
+
 
 def fetch() -> List[str]:
     mnemonics = []
